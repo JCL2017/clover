@@ -1,9 +1,11 @@
 #coding=utf-8
 
+import copy
 import datetime
 
 from clover.exts import db
-from clover.core.message import Message
+from clover.core.context import Context
+from clover.core.producer import Producer
 from clover.core.executor import Executor
 
 from clover.models import soft_delete
@@ -23,10 +25,16 @@ class InterfaceService(object):
         db.session.add(model)
         db.session.commit()
 
+        context = Context()
+        context.build_context({
+            'type': 'interface',
+            'id': model.id,
+            'user': data
+        })
         executor = Executor('debug')
-        executor.execute([data], data)
+        status, message, data = executor.execute(context)
 
-        return model.id, executor.status, executor.message, data
+        return model.id, status, message, data
 
     def delete(self, data):
         """
@@ -56,10 +64,16 @@ class InterfaceService(object):
             old_model.updated = datetime.datetime.now()
             db.session.commit()
 
+        context = Context()
+        context.build_context({
+            'type': 'interface',
+            'id': data['id'],
+            'user': data
+        })
         executor = Executor('debug')
-        executor.execute([data], data)
+        status, message, data = executor.execute(context)
 
-        return old_model.id, executor.status, executor.message, data
+        return old_model.id, status, message, data
 
     def search(self, data):
         """
@@ -103,19 +117,11 @@ class InterfaceService(object):
 
     def trigger(self, data):
         """
-        # 这里创建一个空report，然后使用celery异步运行任务，
-        # 当celery执行完毕后使用空report的id更新报告。
         :param data:
         :return:
         """
-        message = Message()
-        # message.send({
-        #     'type': 'interface',
-        #     'sub_type': 'interface',
-        #     'id': data.get('id'),
-        #     'user': data,
-        # })
-        msg_id = message.send_stream({
+        producer = Producer()
+        producer.send_stream({
             'type': 'interface',
             'sub_type': 'interface',
             'id': data.get('id'),

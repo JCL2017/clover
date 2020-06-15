@@ -70,7 +70,8 @@ class InterfaceView(CloverView):
                 'message': message,
                 'data': {
                     'id': id,
-                    **result,
+                    'response': result,
+                    **data,
                 },
             })
         except Exception as error:
@@ -113,7 +114,7 @@ class InterfaceView(CloverView):
                 'message': '请选择您要更新的接口！',
                 'data': data
             })
-
+        
         try:
             id, status, message, result = self.service.update(data)
             return jsonify({
@@ -121,7 +122,8 @@ class InterfaceView(CloverView):
                 'message': message,
                 'data': {
                     'id': id,
-                    **result,
+                    'response': result,
+                    **data,
                 },
             })
         except Exception as error:
@@ -168,22 +170,16 @@ class InterfaceView(CloverView):
                 'data': data,
             })
 
-        result = self.service.trigger(data)
-        return jsonify({
-            'status': 0,
-            'message': 'ok',
-            'data': result,
-        })
-        # try:
-        #     result = self.service.trigger(data)
-        #     return jsonify({
-        #         'status': 0,
-        #         'message': 'ok',
-        #         'data': result,
-        #     })
-        # except Exception as error:
-        #     return jsonify({
-        #         'status': 500,
-        #         'message': str(error),
-        #         'data': data
-        #     })
+        try:
+            result = self.service.trigger(data)
+            return jsonify({
+                'status': 0,
+                'message': 'ok',
+                'data': result,
+            })
+        except Exception as error:
+            return jsonify({
+                'status': 500,
+                'message': str(error),
+                'data': data
+            })
