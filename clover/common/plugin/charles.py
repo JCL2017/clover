@@ -35,6 +35,7 @@ class Charles(Pipeline):
                 # urlparse.path方法会算出url后面跟的path
                 url = item['request']['url']
                 host = urlparse(url).scheme +"://"+urlparse(url).netloc
+                # path = urlparse(url).path
                 if len(name) >= 64:
                     name = name[0:64]
 

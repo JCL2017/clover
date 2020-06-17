@@ -6,7 +6,7 @@ from clover.exts import db
 def query_to_dict(results):
     """
     # 将BaseQuery对象转换为可以json序列化的普通python对象。
-    # 通常采用Model.query方法返回的数据需要使用次方法转换。
+    # 通常采用Model.query方法返回的数据需要使用此方法转换。
     # 注意，如果只返回一条数据直接调用to_dict方法即可。
     :param results:
     :return:

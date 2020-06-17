@@ -58,4 +58,5 @@ NOTIFY = {
     'event': ['success', 'failed'],
     # 通知的方式，企业微信还是email，或则配置的其它方式
     'channel': ['email'],
+    # 'channel': ['email','wechat'],
 }
