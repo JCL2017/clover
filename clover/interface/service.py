@@ -1,6 +1,5 @@
 #coding=utf-8
 
-import copy
 import datetime
 
 from clover.exts import db
@@ -111,7 +110,13 @@ class InterfaceService(object):
         ).order_by(
             InterfaceModel.created.desc()
         ).offset(offset).limit(limit)
+
         results = query_to_dict(results)
+
+        for result in results:
+            if result['status'] == None:
+                result['status'] = True
+
         count = InterfaceModel.query.filter_by(**filter).count()
         return count, results
 
@@ -121,10 +126,21 @@ class InterfaceService(object):
         :return:
         """
         producer = Producer()
-        producer.send_stream({
+        producer.send({
             'type': 'interface',
             'sub_type': 'interface',
             'id': data.get('id'),
             'user': data,
         })
+        return
+
+    def switch(self,data):
+        """
+        :param data:
+        :return:
+        """
+        old_model = InterfaceModel.query.get(data['id_list'])
+        {setattr(old_model, k, v) for k, v in data.items()}
+        old_model.updated = datetime.datetime.now()
+        db.session.commit()
         return

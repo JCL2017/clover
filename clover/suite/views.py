@@ -145,3 +145,33 @@ class SuiteView(CloverView):
         #         'message': '运行套件出错，请联系管理员！',
         #         'data': str(error)
         #     })
+
+    def switch(self):
+        data = request.get_json()
+        if 'id_list' not in data or not data['id_list']:
+            return jsonify({
+                'status': 400,
+                'message': '请选择您要更改开关状态的接口！',
+                'data': data
+            })
+
+        if 'status' not in data:
+            return jsonify({
+                'status': 400,
+                'message': '请选择您要更改接口的状态！',
+                'data': data
+            })
+
+        try:
+            result = self.service.switch(data)
+            return jsonify({
+                'status': 0,
+                'message': '套件已开启' if data['status'] else '套件已禁用',
+                'data': result,
+            })
+        except Exception as error:
+            return jsonify({
+                'status': 500,
+                'message': str(error),
+                'data': data
+            })

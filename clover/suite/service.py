@@ -1,4 +1,6 @@
 
+import datetime
+
 from sqlalchemy.exc import ProgrammingError
 
 from clover.exts import db
@@ -69,8 +71,16 @@ class SuiteService():
         ).order_by(
             SuiteModel.created.desc()
         ).offset(offset).limit(limit)
+
         results = query_to_dict(results)
+
+        # 禁用功能兼容1.0版本，历史数据为null
+        for result in results:
+            if result['status'] == None:
+                result['status'] = True
+
         count = SuiteModel.query.filter_by(**filter).count()
+
         return count, results
 
     def trigger(self, data):
@@ -82,10 +92,21 @@ class SuiteService():
         """
 
         producer = Producer()
-        producer.send_stream({
+        producer.send({
             'type': 'suite',
             'sub_type': 'interface',
             'id': data.get('id'),
             'user': data,
         })
+        return
+
+    def switch(self,data):
+        """
+        :param data:
+        :return:
+        """
+        old_model = SuiteModel.query.get(data['id_list'])
+        {setattr(old_model, k, v) for k, v in data.items()}
+        old_model.updated = datetime.datetime.now()
+        db.session.commit()
         return
