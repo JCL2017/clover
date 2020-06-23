@@ -1,4 +1,5 @@
 import redis
+# from redis import redis
 from flask_sqlalchemy import SQLAlchemy
 
 import config

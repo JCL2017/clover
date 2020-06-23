@@ -18,6 +18,7 @@ def map_urls(app):
     # 版本相关路由与视图带增加
     # 配置管理相关路由与视图
     index = Index.as_view("index")
+    print(index)
     app.add_url_rule(
         "/api/v1/index/info",
         view_func=index,
@@ -273,3 +274,8 @@ def map_urls(app):
         methods=['POST'],
         strict_slashes=False,
     )
+
+
+if __name__=="__main__":
+    from clover import app
+    map_urls(app)
