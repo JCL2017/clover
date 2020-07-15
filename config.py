@@ -1,6 +1,15 @@
 # Clover全局配置
 DEBUG = True
-VERSION = '1.2.2'
+VERSION = '1.3.0'
+
+# 全局功能配置
+GLOBALS = {
+    'timeout': {
+        'connect': 3,
+        'read': 60,
+    },  # 全局接口超时配置，默认链接超时3秒，读超时60秒。
+    'retry': 2,     # 全局接口重试配置，默认2次。
+}
 
 # MySQL数据库配置
 MYSQL = {
@@ -16,6 +25,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS=True
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
 REDIS_DATABASE = 0
+REDIS_STREAM_NAME = 'clover'
 
 # 功能控制，True则生效，False则无效
 MODULE = {
