@@ -7,6 +7,9 @@
 
 import re
 
+from clover.models import query_to_dict
+from clover.environment.models import KeywordModel
+
 from clover.core.logger import Logger
 from clover.core.exception import KeywordException
 
@@ -21,6 +24,15 @@ class Keyword(object):
         self.function = None
         self.parameters = []
         self.function_name = None
+
+    def _load_keywords(self, classify):
+        """
+        :param classify:
+        :return:
+        """
+        filter = {'enable': 0, 'classify': classify}
+        keywords = KeywordModel.query.filter_by(**filter).all()
+        return query_to_dict(keywords)
 
     def get_function_name_from_source(self):
         """
@@ -56,7 +68,9 @@ class Keyword(object):
             Logger.log("不能提取关键字参数，执行失败！", "关键字判定")
             return False
         parameters = parameters[0]
+        print("参数为：", parameters)
         for param in parameters.split(','):
+            print("添加参数：", param.strip())
             self.parameters.append(param.strip())
 
         return self.function_name is not None and self.parameters
@@ -73,6 +87,7 @@ class Keyword(object):
 
             # 从locals获取执行关键字。
             if self.function_name not in locals():
+                print("获取关键字失败！")
                 Logger.log("获取关键字失败！", "关键字执行")
                 raise KeywordException
             self.function = locals()[self.function_name]
@@ -80,25 +95,103 @@ class Keyword(object):
             # 判断正则提取的参数与函数实际参数是否一致。
             parameter_count = locals()[self.function_name].__code__.co_argcount
             if len(self.parameters) != parameter_count:
-                Logger.log("执行关键字时实际参数与所需参数不匹配", "关键字执行")
+                print("执行关键字时实际参数与所需参数不匹配！")
+                Logger.log("执行关键字时实际参数与所需参数不匹配！", "关键字执行")
                 raise KeywordException
 
             # 从locals获取执行关键字所需参数列表。
-            parameters = []
-            for parameter in self.parameters:
-                if parameter not in globals() and parameter not in locals():
-                    Logger.log("找不到执行关键字的必要参数！", "关键字执行")
-                    continue
-                if parameter in globals():
-                    parameters.append(globals()[parameter])
-                else:
-                    parameters.append(locals()[parameter])
-                    continue
-
+            # parameters = []
+            # for parameter in self.parameters:
+            #     print(self.parameters)
+            #     print(locals())
+            #     if parameter not in globals() and parameter not in locals():
+            #         print("找不到执行关键字的必要参数！")
+            #         Logger.log("找不到执行关键字的必要参数！", "关键字执行")
+            #         continue
+            #     if parameter in globals():
+            #         parameters.append(globals()[parameter])
+            #     else:
+            #         parameters.append(locals()[parameter])
+            #         continue
+            print("执行关键字并返回结果。")
+            print(self.function)
+            print(*self.parameters)
+            print(self.function(*self.parameters))
             # 执行关键字并返回结果。
-            return self.function(*parameters)
+            return self.function(*self.parameters)
         except Exception as error:
+            print("卧槽，不会吧！", str(error))
             Logger.log("执行关键字时发生异常{}".format(error), "关键字执行", level="error")
+
+    def derivation(self, data):
+        """
+        :param data:
+        :return:
+        """
+        # 这里如果data是空值则不处理。
+        if not data or not isinstance(data, (str, bytes, )):
+            return data
+
+        print(50 * "*")
+        print("处理数据：", data)
+        if isinstance(data, (bytes, )):
+            data = str(data, encoding="utf-8")
+
+        flag = self.is_keyword(data)
+        print("发现关键字：", self.function_name, flag)
+        if not flag:
+            return data
+        Logger.log("发现关键字[{}]！".format(self.function_name), "关键字执行")
+
+        # 查找关键字并执行
+        print(self.keywords)
+        for keyword in self.keywords:
+            print(keyword)
+            if keyword['name'] == self.function_name:
+                Logger.log("关键字[{}]存在！".format(self.function_name), "关键字执行")
+                print("匹配到关键字：", self.function_name)
+                self.source = keyword['keyword']
+                print("关键字源代码：", self.source)
+                return self.execute()
+            return data
+
+        return data
+
+    def call_keyword(self, request, classify=None):
+        """
+        :param request:
+        :return:
+        """
+        self.keywords = self._load_keywords(classify)
+
+        if request.header:
+            for key, value in request.header.items():
+                request.header[key] = self.derivation(value)
+
+        if request.parameter:
+            for key, value in request.parameter.items():
+                request.parameter[key] = self.derivation(value)
+
+        if request.body:
+            if request.body_mode in ['formdata', 'urlencoded']:
+                for key, value in request.body.items():
+                    request.body[key] = self.derivation(value)
+            elif request.body_mode in ['file']:
+                pass
+            else:
+                """
+                # 这是"expected string or bytes-like object"问题的一个临时解决方案。
+                # 原因是当body数据类型为raw，数据为json时，view层接收数据时自动将其转为
+                # python对象，因此这里进行derivation会报错。
+                """
+                if isinstance(request.body, (list,)):
+                    for key, value in request.body.items():
+                        request.body[key] = self.derivation(value)
+                else:
+                    value = self.derivation(request.body)
+                    print("关键字执行结果：", value)
+                    # request.body =
+        return request
 
 
 if __name__ == '__main__':
