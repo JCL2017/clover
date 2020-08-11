@@ -134,7 +134,7 @@ class InterfaceService(object):
         })
         return
 
-    def switch(self,data):
+    def switch(self, data):
         """
         :param data:
         :return:

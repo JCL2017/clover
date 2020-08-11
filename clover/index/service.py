@@ -1,13 +1,9 @@
 
-from sqlalchemy import func
-
-from clover.exts import db
-from clover.models import query_to_dict
 from clover.suite.models import SuiteModel
 from clover.interface.models import InterfaceModel
 from clover.environment.models import TeamModel
 from clover.environment.models import VariableModel
-from clover.environment.models import KeywordModel
+from clover.keyword.models import KeywordModel
 
 
 class Service():

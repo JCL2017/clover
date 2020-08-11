@@ -1,70 +1,59 @@
+"""
+# cloverè§†å›¾å¼‚å¸¸è£…é¥°å™¨ï¼Œå½“æ•è·è§†å›¾å¼‚å¸¸æ—¶å°†è¿”å›çŠ¶æ€ç 500å’Œå¼‚å¸¸ä¿¡æ¯ã€‚
+# author ï¼štaoyanli0808
+# date   ï¼š2020å¹´8æœˆ6æ—¥22:03:10
+# versionï¼š1.0.0
+"""
 
+import traceback
 from functools import wraps
 
 from flask import jsonify
 from flask import make_response
 
-from sqlalchemy.exc import SQLAlchemyError as _SQLAlchemyError
-from requests.exceptions import RequestException as _RequestException
+from sqlalchemy.exc import SQLAlchemyError
+
+from clover.exts import db
 
 
-class CloverException(Exception):
-
-    def __init__(self):
-        self.status = 100
-        self.message = "CloverÆ½Ì¨ÄÚ²¿´íÎó£¡"
+class ResponseException(Exception): pass
 
 
-class DatabaseException(_SQLAlchemyError):
-
-    def __init__(self):
-        self.status = 200
-        self.message = "Êı¾İ¿â´íÎó£¬ÇëÁªÏµ¹ÜÀíÔ±£¡"
-
-
-class RequestException(_RequestException):
-
-    def __init__(self):
-        self.status = 300
-        self.message = "±»²âÊÔµÄ½Ó¿ÚHTTP(S)ÇëÇó³ö´íÎó£¡"
-
-
-class ResponseException(CloverException):
-
-    def __init__(self):
-        self.status = 400
-        self.message = "±»²âÊÔµÄ½Ó¿Ú·µ»Ø´íÎóµÄÏìÓ¦£¡"
-
-
-class KeywordException(CloverException):
-
-    def __init__(self):
-        self.status = 500
-        self.message = "Æ½Ì¨Ö´ĞĞ¹Ø¼ü×Ö·¢Éú´íÎó£¡"
-
-
-def catch_exception(cls=CloverException):
+def catch_exception(func):
     """
-    # ²¶»ñÒì³£µÄ×°ÊÎÆ÷£¬´«ÈëĞèÒª²¶»ñµÄÒì³£ÀàĞÍ¡£
-    #
-    :param cls: Òì³£ÀàĞÍ
+    # æ•è·è§†å›¾å¼‚å¸¸çš„è£…é¥°å™¨
     :return:
     """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except cls as error:
-                print(cls)
-                response = make_response(
-                    jsonify(error.__dict__), 500
-                )
-                return response
-        return wrapper
-    return decorator
-
-
-if __name__ == '__main__':
-    e = CloverException()
-    print(e.__dict__)
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except SQLAlchemyError:
+            print("æ•è·å¼‚å¸¸")
+            db.session.rollback()
+            response = make_response(
+                jsonify({
+                    'status': 500,
+                    'message': 'è¿è¡Œæ—¶æ•°æ®åº“å‡ºé”™ï¼Œè¯·è”ç³»ç®¡ç†å‘˜ï¼',
+                    'data': {
+                        'error': 'SQLAlchemyError',
+                        'function': func.__name__,
+                        'traceback': traceback.format_exc()
+                    }
+                }), 500
+            )
+            return response
+        except Exception as error:
+            response = make_response(
+                jsonify({
+                    'status': 500,
+                    'message': 'è¿è¡Œæ—¶ä»£ç å‡ºé”™ï¼Œè¯·è”ç³»ç®¡ç†å‘˜ï¼',
+                    'data': {
+                        'error': str(error),
+                        'function': func.__name__,
+                        'traceback': traceback.format_exc()
+                    }
+                }), 500
+            )
+            return response
+    return wrapper

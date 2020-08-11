@@ -10,7 +10,6 @@ from clover.common import get_mysql_error
 from clover.models import soft_delete
 from clover.models import query_to_dict
 from clover.suite.models import SuiteModel
-from clover.interface.models import InterfaceModel
 
 
 class SuiteService():
@@ -25,12 +24,7 @@ class SuiteService():
         """
         model = SuiteModel(**data)
         db.session.add(model)
-        # 这是一个处理数据库异常的例子，后面最好有统一的处理方案。
-        try:
-            db.session.commit()
-        except ProgrammingError as error:
-            code, msg = get_mysql_error(error)
-            return (code, msg)
+        db.session.commit()
         return model.id
 
     def delete(self, data):

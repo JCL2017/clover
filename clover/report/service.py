@@ -1,11 +1,8 @@
 
 import datetime
 
-from sqlalchemy.exc import ProgrammingError
-
 from clover.exts import db
 from clover.models import soft_delete
-from clover.models import query_to_dict
 from clover.common import friendly_datetime
 from clover.report.models import ReportModel
 
@@ -126,46 +123,3 @@ class ReportService():
         id = data.get('id')
         report = ReportModel.query.get(id)
         return report.log
-
-    def empty_report(self, data):
-        """
-        :param data:
-        :return:
-        """
-        try:
-            if 'report' in data and data['report']: #正常传了report，平台触发的
-                name=data['report']
-            elif  data['report']=='' and data['name']!='': #没写report名，但是有套件名，平台触发的
-                name=data['name']
-        except Exception as error:
-            name='ci-AutoTest'
-        #name = data['report'] if 'report' in data and data['report'] else data.get('name')
-        report = {
-            'team': data['team'],
-            'project': data['project'],
-            'name': name,
-            'type': 'interface',
-            'interface': {
-                'verify': 0,
-                'passed': 0,
-                'failed': 0,
-                'error': 0,
-                'skiped': data['skip'],
-                'total': 0,
-                'percent': 0.0,
-            },
-            'start': datetime.datetime.now(),
-            'end': datetime.datetime.now(),
-            'duration': 0,
-            'platform': {},
-            'detail': 0,
-            'log': {},
-        }
-
-        model = ReportModel(**report)
-        db.session.add(model)
-        try:
-            db.session.commit()
-            return model
-        except ProgrammingError:
-            return None
